@@ -19,6 +19,9 @@ describe('POST /api/convert', () => {
       .post('/api/convert')
       .send({ hex: 'not-a-color' });
 
+    console.log('Invalid request status:', response.status);
+    console.log('Invalid request body:', response.body);
+
     expect(response.status).toBe(400);
     expect(response.body).toEqual({
       error: 'Hex value must contain 3 or 6 hexadecimal digits'
