@@ -206,5 +206,4 @@ package-lock.json Exact dependency versions
 | `npm start` | Start the Express server |
 | `npm test` | Run all unit and integration tests |
 
-The detailed test discussion and screenshots are available in the separate
-[`Document.md`](../Document.md) report.
+
