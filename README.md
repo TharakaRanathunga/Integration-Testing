@@ -27,7 +27,7 @@ npm install
 ```
 
 `node_modules` is created locally by npm and is excluded from Git by
-[`.gitignore`](.gitignore). It must not be committed to the repository.
+[`.gitignore`](.gitignore). 
 
 ## Running the API
 
