@@ -1,99 +1,210 @@
 # Hex-to-RGB REST API
 
-This project demonstrates unit and integration testing with a small JavaScript
-library and an Express REST API.
+A small Node.js project that converts hexadecimal colour values into RGB
+values. It includes a reusable conversion module, an Express REST API, unit
+tests, and integration tests.
+
+## Features
+
+- Converts three-digit and six-digit hexadecimal colours.
+- Accepts values with or without a leading `#`.
+- Validates malformed input and returns useful errors.
+- Exposes the conversion through `POST /api/convert`.
+- Tests the conversion logic with Jest unit tests.
+- Tests the Express route with Jest and Supertest integration tests.
 
 ## Requirements
 
 - Node.js 18 or newer
 - npm
 
-## Install and run
+## Installation
 
-Install dependencies from `package.json`:
+Open a terminal in the project directory and install the dependencies:
 
-```bash
+```powershell
 npm install
 ```
 
-Start the API:
+`node_modules` is created locally by npm and is excluded from Git by
+[`.gitignore`](.gitignore). It must not be committed to the repository.
 
-```bash
+## Running the API
+
+Start the server with:
+
+```powershell
 npm start
 ```
 
-The server listens on `http://localhost:3000` (or the value of `PORT`).
+The server listens on:
 
-## API specification
+```text
+http://localhost:3000
+```
+
+You can use another port by setting the `PORT` environment variable:
+
+```powershell
+$env:PORT = 3001
+npm start
+```
+
+## API reference
 
 ### `POST /api/convert`
 
-Send a JSON object containing a three- or six-digit hexadecimal color. The
-leading `#` is optional.
+The request must contain a JSON body with a three-digit or six-digit
+hexadecimal colour. The leading `#` is optional.
 
 Request:
 
 ```http
-POST /api/convert
+POST http://localhost:3000/api/convert
 Content-Type: application/json
 
-{"hex":"#336699"}
+{
+  "hex": "#336699"
+}
 ```
 
-Successful response (`200`):
+Successful response (`200 OK`):
 
 ```json
 {
   "hex": "#336699",
-  "rgb": { "r": 51, "g": 102, "b": 153 }
+  "rgb": {
+    "r": 51,
+    "g": 102,
+    "b": 153
+  }
 }
 ```
 
-Malformed values return `400` with an error message:
+Invalid values return `400 Bad Request`:
 
 ```json
-{"error":"Hex value must contain 3 or 6 hexadecimal digits"}
+{
+  "error": "Hex value must contain 3 or 6 hexadecimal digits"
+}
 ```
 
-The reusable conversion function is documented in
-[`src/hexToRgb.js`](src/hexToRgb.js), and the route is defined in
-[`src/app.js`](src/app.js). `src/server.js` only starts the listener, which
-allows the integration test to import the app without opening a network port.
+## Testing
 
-## Tests
+Run the complete automated test suite:
 
-Run the complete test suite:
-
-```bash
+```powershell
 npm test
 ```
 
-The unit tests in [`test/hexToRgb.test.js`](test/hexToRgb.test.js) call the
-library directly and verify six-digit conversion, shorthand conversion, and
-invalid input handling. The integration tests in
-[`test/app.integration.test.js`](test/app.integration.test.js) send HTTP
-requests through the Express app and verify both the successful JSON response
-and the `400` response for invalid input.
-
-Expected result after a clean install:
+The expected result is:
 
 ```text
 Test Suites: 2 passed, 2 total
 Tests:       5 passed, 5 total
 ```
 
-## REST client example
+### Unit tests only
 
-With the server running, the same endpoint can be checked with cURL:
+The unit tests call the conversion function directly. They cover six-digit
+conversion, three-digit shorthand conversion, and invalid input:
 
-```bash
-curl -X POST http://localhost:3000/api/convert ^
-  -H "Content-Type: application/json" ^
-  -d "{\"hex\":\"#ff8800\"}"
+```powershell
+npx jest test/hexToRgb.test.js --runInBand
 ```
 
-Expected response:
+Expected result:
 
-```json
-{"hex":"#ff8800","rgb":{"r":255,"g":136,"b":0}}
+```text
+Test Suites: 1 passed, 1 total
+Tests:       3 passed, 3 total
 ```
+
+### Integration tests only
+
+The integration tests send HTTP-style requests through the Express app. They
+check the successful `200` response and the invalid-input `400` response:
+
+```powershell
+npx jest test/app.integration.test.js --runInBand
+```
+
+Expected result:
+
+```text
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+```
+
+The integration tests import the Express app directly through Supertest, so
+the server does not need to be started with `npm start` when running Jest.
+
+## Manual REST-client test
+
+Start the API with `npm start`, then open a second PowerShell terminal and run:
+
+```powershell
+$body = @{ hex = "#ff8800" } | ConvertTo-Json
+$response = Invoke-WebRequest `
+  -UseBasicParsing `
+  -Uri "http://localhost:3000/api/convert" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
+
+Write-Host "HTTP status: $($response.StatusCode)"
+Write-Host "Response body: $($response.Content)"
+```
+
+Expected output:
+
+```text
+HTTP status: 200
+Response body: {"hex":"#ff8800","rgb":{"r":255,"g":136,"b":0}}
+```
+
+An invalid request can be tested with:
+
+```powershell
+$body = @{ hex = "invalid" } | ConvertTo-Json
+
+try {
+  Invoke-WebRequest -UseBasicParsing `
+    -Uri "http://localhost:3000/api/convert" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+}
+catch {
+  Write-Host "HTTP status: $([int]$_.Exception.Response.StatusCode)"
+}
+```
+
+The expected status is `400 Bad Request`. The same requests can be sent using
+Postman with the Desktop Agent.
+
+## Project structure
+
+```text
+src/
+  app.js          Express app and API route
+  hexToRgb.js     Reusable hex-to-RGB conversion function
+  server.js       Starts the HTTP listener
+test/
+  hexToRgb.test.js          Unit tests
+  app.integration.test.js   Express integration tests
+package.json      Scripts and dependencies
+package-lock.json Exact dependency versions
+.gitignore        Excludes generated and environment-specific files
+```
+
+## NPM scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm install` | Install project dependencies |
+| `npm start` | Start the Express server |
+| `npm test` | Run all unit and integration tests |
+
+The detailed test discussion and screenshots are available in the separate
+[`Document.md`](../Document.md) report.
